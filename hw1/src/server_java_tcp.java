@@ -23,7 +23,8 @@ public class server_java_tcp {
             DataOutputStream out = new DataOutputStream(connection.getOutputStream());
 
             input = in.readLine();
-            out.writeBytes("You said "+input);
+            System.out.println("Received input: "+input);
+            out.writeBytes("You said "+input + "\n");
         }
         // END
     }
