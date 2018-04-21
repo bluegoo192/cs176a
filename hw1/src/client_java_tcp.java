@@ -35,10 +35,15 @@ public class client_java_tcp {
 
         out.writeBytes(command+"\n");  // *
         if (debug) System.out.println("sent bytes");
-        String res = response.readLine();
-        System.out.println("response: "+res);
+        String line = response.readLine();
+        StringBuilder res =  new StringBuilder();
+        while (line != null) {
+            System.out.println(line);
+            res.append(line);
+            line = response.readLine();
+        }
         socket.close();
-        return res;
+        return res.toString();
     }
 
     private boolean validateIp(String address) {

@@ -25,6 +25,7 @@ public class server_java_tcp {
             input = in.readLine();
             System.out.println("Received input: "+input);
             out.writeBytes("You said "+input + "\n");
+            out.writeBytes("test\n");
         }
         // END
     }
