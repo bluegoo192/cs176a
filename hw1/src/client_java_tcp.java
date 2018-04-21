@@ -11,7 +11,6 @@ import java.net.Socket;
 public class client_java_tcp {
 
     private BufferedReader input;
-    private String hostname;
     private Socket socket;
     private boolean debug = true;
 
@@ -19,22 +18,64 @@ public class client_java_tcp {
         input = new BufferedReader(new InputStreamReader(System.in));  // *
     }
 
-    public void connect() throws IOException {
-        hostname = promptIp();
-        int port = 3300;
-        socket = new Socket(hostname, port); // * client socket for server connection
-        if (debug) System.out.println("Connected!");
+    /**
+     * Gather connection info from user and establish socket connection
+     * @return whether or not connection was successful
+     * @throws IOException if cannot read input from user (does NOT throw exception for connection failure)
+     */
+    public boolean connect() throws IOException {
+        // get hostname
+        System.out.println("Enter server name or IP address:  ");
+        String hostname = input.readLine();
+        if (!validateIp(hostname)) {
+            System.err.println("Could not connect to server");
+            return false;
+        }
+
+        // get port
+        System.out.println("Enter port:  ");
+        String portString = input.readLine();
+        int port;
+        try {
+            port = Integer.parseInt(portString);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid port number");
+            return false;
+        }
+        if (!validatePort(port)) {
+            System.err.println("Invalid port number");
+            return false;
+        }
+
+        // connect
+        try {
+            socket = new Socket(hostname, port); // * client socket for server connection
+        } catch (IOException e) {
+            System.err.println("Could not connect to server");
+            return false;
+        }
+
+        if (debug) System.out.println("  > Connected!");
+        return true;
     }
 
-    public String sendCommand() throws IOException {
+    /**
+     * Get command from user, send to server, and print response
+     * @throws IOException if anything goes wrong
+     */
+    public void sendCommand() throws IOException {
         DataOutputStream out = new DataOutputStream(socket.getOutputStream()); // *
         BufferedReader response = new BufferedReader(new InputStreamReader(socket.getInputStream()));  // *
 
+        // get command from user
         System.out.println("Enter command: ");
         String command = input.readLine();
 
+        // send it
         out.writeBytes(command+"\n");  // *
-        if (debug) System.out.println("sent bytes");
+        if (debug) System.out.println("  > sent bytes");
+
+        // print response
         String line = response.readLine();
         StringBuilder res =  new StringBuilder();
         while (line != null) {
@@ -42,34 +83,25 @@ public class client_java_tcp {
             res.append(line);
             line = response.readLine();
         }
-        socket.close();
-        return res.toString();
+        socket.close(); // close connection
     }
 
     private boolean validateIp(String address) {
         return (address.startsWith("localhost"));
     }
 
-    /**
-     * Ask user for server's IP address
-     * @return valid IP address
-     */
-    private String promptIp() throws IOException {
-        System.out.println("Enter server name or IP address:  ");
-        String userInput = input.readLine();
-        boolean valid = validateIp(userInput);
-        while (!valid) {
-            System.out.println("Sorry, "+userInput+" doesn't appear to be a valid IP.  Please try again:  ");
-            userInput = input.readLine();
-            valid = validateIp(userInput);
-        }
-        return userInput;
+    private boolean validatePort(int port) {
+        return true;
     }
-
 
     public static void main(String args[]) throws IOException {
         client_java_tcp client = new client_java_tcp();
-        client.connect();
-        client.sendCommand();
+        boolean connected = client.connect();
+        if (!connected) return;
+        try {
+            client.sendCommand();
+        } catch (IOException e) {
+            System.err.println("Failed to send command.  Terminating.");
+        }
     }
 }
