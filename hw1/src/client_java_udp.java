@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Created by Arthur on 4/22/18.
@@ -51,19 +53,35 @@ public class client_java_udp {
         socket.receive(res);
         int expectedLength = ByteBuffer.wrap(res.getData()).getInt();
         int bytesReceived = 0;
+        sendAck(res);
 
         // receive incoming packets
         socket.setSoTimeout(500);
+        ArrayList<Byte> data = new ArrayList<>();
         while (bytesReceived < expectedLength) {
             res = new DatagramPacket(new byte[1024], 1024);
             socket.receive(res);
+            for (int i=0; i<res.getData().length; i++) {
+                data.add(res.getData()[i]);
+            }
+            bytesReceived += res.getData().length;
         }
+        sendAck(res);
+
 
 
 
         // save file
 
         return true;
+    }
+
+    private void sendAck(DatagramPacket received) throws IOException {
+        String response = new String(received.getData());
+        response = "ACK: "+response;
+        byte[] sendData = response.getBytes();
+        DatagramPacket send = new DatagramPacket(sendData, sendData.length, received.getAddress(), received.getPort());
+        socket.send(send);
     }
 
     /**
