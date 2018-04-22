@@ -49,11 +49,18 @@ public class server_java_tcp {
             }
             writer.close();
 
+            // send file size
+            out.writeBytes(f.length() + "\n");
+
+            // send file -- code adapted from https://gist.github.com/CarlEkerot/2693246
+            FileInputStream fis = new FileInputStream(f);
+            byte[] buffer = new byte[4096];
+            while (fis.read(buffer) > 0) {
+                out.write(buffer);
+            }
+            fis.close();
+
             System.out.println("Received input: "+input);
-            out.writeBytes("You said "+input + "\n");
-            out.writeBytes("wrote to "+filename+"\n");
-
-
         }
         // END
     }
