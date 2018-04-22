@@ -35,14 +35,14 @@ public class server_java_udp {
             String response;
             try {
                 socket.receive(receipt);
-                if (receipt.getLength() < expectedLength) throw new SocketTimeoutException();
+                if (receipt.getLength() != expectedLength) throw new SocketTimeoutException();
                 response = new String(receipt.getData());
             } catch (SocketTimeoutException e) {
                 System.out.println("Failed getting instructions from the client.");
                 continue;
             }
 
-            response = "You said: "+response;
+            response = "ACK: "+response;
             sendData = response.getBytes();
 
             DatagramPacket sendPacket =
