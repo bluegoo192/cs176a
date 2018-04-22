@@ -1,10 +1,8 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.*;
+import java.nio.ByteBuffer;
 
 /**
  * Created by Arthur on 4/22/18.
@@ -31,7 +29,11 @@ public class client_java_udp {
         command = input.readLine();
         System.out.println();
 
-        send(command);
+        boolean sendCommandSuccess = send(command);
+        if (!sendCommandSuccess) {
+            System.out.println("Failed to send command. Terminating.");
+            return;
+        }
     }
 
     /**
@@ -77,15 +79,40 @@ public class client_java_udp {
     private boolean send(String message) throws IOException {
         byte[] receiveData = new byte[1024];  // *
         byte[] sendData = message.getBytes();  // *
+        byte[] length = ByteBuffer.allocate(4).putInt(sendData.length).array();  // from https://stackoverflow.com/a/2183279
+
+        DatagramPacket lengthPacket = new DatagramPacket(length, length.length, ip, port);
         DatagramPacket packet = new DatagramPacket(sendData, sendData.length, ip, port);  // *
+        socket.send(lengthPacket);
         socket.send(packet);  // *
 
         // receive a packet in return
         DatagramPacket receipt = new DatagramPacket(receiveData, receiveData.length);  // *
-        socket.receive(receipt);
+        boolean success = receivePacket(receipt, 1);
+        if (!success) return false;
+
         System.out.println("Received packet from server: ");
         System.out.println(new String(receipt.getData()));
 
+        return true;
+    }
+
+    private boolean receivePacket(DatagramPacket receipt, int tries) {
+        try {
+            socket.setSoTimeout(1000);  // set a 1-second timeout for our ACK
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to set socket timeout?!?!");
+            return false;
+        }
+
+        try {
+            socket.receive(receipt);
+        } catch (Exception se) {
+            System.out.println("Failed, retrying...");
+            if (tries > 2) return false;
+            return receivePacket(receipt, tries+1);
+        }
         return true;
     }
 
