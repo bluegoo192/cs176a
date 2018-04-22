@@ -32,25 +32,25 @@ public class server_java_udp {
             socket.setSoTimeout(500);
 
             receipt = new DatagramPacket(new byte[1024], 1024);
-            String response;
             try {
                 socket.receive(receipt);
                 if (receipt.getLength() != expectedLength) throw new SocketTimeoutException();
-                response = new String(receipt.getData());
             } catch (SocketTimeoutException e) {
                 System.out.println("Failed getting instructions from the client.");
                 continue;
             }
 
-            response = "ACK: "+response;
-            sendData = response.getBytes();
-
-            DatagramPacket sendPacket =
-                    new DatagramPacket(sendData, sendData.length, receipt.getAddress(), receipt.getPort());
-
-            socket.send(sendPacket);
+            sendAck(receipt);
             socket.setSoTimeout(0); // reset timeout
         }
+    }
+
+    private void sendAck(DatagramPacket received) throws IOException {
+        String response = new String(received.getData());
+        response = "ACK: "+response;
+        byte[] sendData = response.getBytes();
+        DatagramPacket send = new DatagramPacket(sendData, sendData.length, received.getAddress(), received.getPort());
+        socket.send(send);
     }
 
     public static void main(String[] args) {

@@ -1,3 +1,4 @@
+import javax.xml.crypto.Data;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,6 +16,7 @@ public class client_java_udp {
     private int port;
     private InetAddress ip;
     private String command;
+    private boolean debug = true;
 
     public client_java_udp() {
         input = new BufferedReader(new InputStreamReader(System.in));  // *
@@ -34,6 +36,34 @@ public class client_java_udp {
             System.out.println("Failed to send command. Terminating.");
             return;
         }
+
+        //boolean saveFileSuccess = saveFileFromServer(parseFileName(command));
+    }
+
+    private boolean saveFileFromServer(String filename) throws IOException {
+        // set up
+        byte[] receiveData = new byte[1024];
+        byte[] sendData = new byte[1024];
+        socket.setSoTimeout(0); // infinite timeout so the server can do its work
+
+        // get file length
+        DatagramPacket res = new DatagramPacket(receiveData, receiveData.length);
+        socket.receive(res);
+        int expectedLength = ByteBuffer.wrap(res.getData()).getInt();
+        int bytesReceived = 0;
+
+        // receive incoming packets
+        socket.setSoTimeout(500);
+        while (bytesReceived < expectedLength) {
+            res = new DatagramPacket(new byte[1024], 1024);
+            socket.receive(res);
+        }
+
+
+
+        // save file
+
+        return true;
     }
 
     /**
@@ -91,8 +121,12 @@ public class client_java_udp {
         boolean success = receivePacket(receipt, 1);
         if (!success) return false;
 
-        System.out.println("Received packet from server: ");
-        System.out.println(new String(receipt.getData()));
+        String response = new String(receipt.getData());
+        if (debug || !response.contains("ACK")) {
+            System.out.println("Received NON ACK packet from server: ");
+            System.out.println(new String(receipt.getData()));
+            return false;
+        }
 
         return true;
     }
@@ -124,6 +158,16 @@ public class client_java_udp {
         return true;
     }
 
+    private String parseFileName(String command) throws IOException {
+        String[] pieces = command.split(">");
+        String filename = null;
+        if (pieces.length > 1) {
+            filename = pieces[pieces.length - 1].trim();
+        }
+        if (filename == null) throw new IOException(); // just in case
+        return filename;
+    }
+
     public static void main(String[] args) {
         client_java_udp client = new client_java_udp();
         try {
@@ -133,5 +177,7 @@ public class client_java_udp {
             System.out.println("Could not fetch file.");
         }
     }
+
+
 
 }
