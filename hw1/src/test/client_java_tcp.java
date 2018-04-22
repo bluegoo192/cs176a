@@ -9,7 +9,6 @@ public class client_java_tcp {
 
     private BufferedReader input;
     private Socket socket;
-    private boolean debug = true;
 
     public client_java_tcp() {
         input = new BufferedReader(new InputStreamReader(System.in));  // *
@@ -36,11 +35,11 @@ public class client_java_tcp {
         try {
             port = Integer.parseInt(portString);
         } catch (NumberFormatException e) {
-            System.err.println("Invalid port number");
+            System.err.println("Invalid port number.");
             return false;
         }
         if (!validatePort(port)) {
-            System.err.println("Invalid port number");
+            System.err.println("Invalid port number.");
             return false;
         }
 
@@ -48,11 +47,10 @@ public class client_java_tcp {
         try {
             socket = new Socket(hostname, port); // * client socket for server connection
         } catch (IOException e) {
-            System.err.println("Could not connect to server");
+            System.err.println("Could not connect to server.");
             return false;
         }
 
-        if (debug) System.out.println("  > Connected!");
         return true;
     }
 
@@ -60,23 +58,35 @@ public class client_java_tcp {
      * Get command from user, send to server, and print response
      * @throws IOException if anything goes wrong
      */
-    public void sendCommand() throws IOException {
-        DataOutputStream out = new DataOutputStream(socket.getOutputStream()); // *
-        BufferedReader response = new BufferedReader(new InputStreamReader(socket.getInputStream()));  // *
+    public void sendCommand() {
+        BufferedReader response;
+        String command;
+        try {
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream()); // *
+            response = new BufferedReader(new InputStreamReader(socket.getInputStream()));  // *
 
-        // get command from user
-        System.out.println("Enter command: ");
-        String command = input.readLine();
+            // get command from user
+            System.out.println("Enter command: ");
+            command = input.readLine();
+            System.out.println();
 
-        // send it
-        out.writeBytes(command+"\n");  // *
-        if (debug) System.out.println("  > sent bytes");
+            // send it
+            out.writeBytes(command+"\n");  // *
+        } catch (IOException e) {
+            System.err.println("Failed to send command. Terminating.");
+            return;
+        }
 
-        // save response to file
-        int filesize = Integer.parseInt(response.readLine());
-        saveResponse(parseFileName(command), filesize);
-
-        socket.close(); // close connection
+        try {
+            // save response to file
+            int filesize = Integer.parseInt(response.readLine());
+            String filename = parseFileName(command);
+            saveResponse(filename, filesize);
+            System.out.println("File "+filename + " saved.");
+            socket.close(); // close connection
+        } catch (IOException e) {
+            System.err.println("Could not fetch file.");
+        }
     }
 
     private void saveResponse(String filename, int filesize) throws IOException {
@@ -86,12 +96,9 @@ public class client_java_tcp {
         byte[] buffer = new byte[4096];
 
         int read = 0;
-        int totalRead = 0;
         int remaining = filesize;
         while ((read = dis.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
-            totalRead += read;
             remaining -= read;
-            System.out.println("read "+totalRead);
             fos.write(buffer, 0, read);
         }
         fos.close();
@@ -119,10 +126,6 @@ public class client_java_tcp {
         client_java_tcp client = new client_java_tcp();
         boolean connected = client.connect();
         if (!connected) return;
-        try {
-            client.sendCommand();
-        } catch (IOException e) {
-            System.err.println("Failed to send command.  Terminating.");
-        }
+        client.sendCommand();
     }
 }
