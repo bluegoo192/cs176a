@@ -28,7 +28,7 @@ public class client_java_tcp {
         System.out.println("Enter server name or IP address:  ");
         String hostname = input.readLine();
         if (!validateIp(hostname)) {
-            System.err.println("Could not connect to server");
+            System.err.println("Could not connect to server.");
             return false;
         }
 
