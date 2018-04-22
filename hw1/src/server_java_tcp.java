@@ -21,11 +21,6 @@ public class server_java_tcp {
             DataOutputStream out = new DataOutputStream(connection.getOutputStream());
             input = in.readLine();
 
-            // run command
-            Runtime rt = Runtime.getRuntime(); // copied from https://stackoverflow.com/a/8496537
-            Process p = rt.exec(input); // run and send output to file
-            BufferedReader commandOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
             // get file name
             String[] pieces = input.split(">");
             String filename = null;
@@ -37,9 +32,20 @@ public class server_java_tcp {
                 throw new IOException(); // just in case
             }
 
+            // reconstruct original command
+            String command = pieces[0];
+            for (int i=1; i<pieces.length - 2; i++) {
+                command = command + ">" + pieces[i]; // original command COULD contain >'s
+            }
+
+            // run command
+            Runtime rt = Runtime.getRuntime(); // copied from https://stackoverflow.com/a/8496537
+            Process p = rt.exec(command); // run and send output to file
+            BufferedReader commandOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
             // write file
             File f = new File(filename);
-            BufferedWriter writer = new BufferedWriter(new FileWriter(f));
+            FileWriter writer = new FileWriter(f);
 
             String line = commandOutput.readLine();
             while (line != null) {
