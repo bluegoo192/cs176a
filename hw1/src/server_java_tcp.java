@@ -43,7 +43,7 @@ public class server_java_tcp {
 
             String line = commandOutput.readLine();
             while (line != null) {
-                writer.write(line);
+                writer.write(line+"\n");
                 System.out.println(line);
                 line = commandOutput.readLine();
             }
