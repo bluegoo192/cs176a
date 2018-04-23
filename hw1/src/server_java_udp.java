@@ -76,6 +76,14 @@ public class server_java_udp {
             }
             writer.close();
 
+            // send size of file
+            byte[] size = ByteBuffer.allocate(8).putLong(f.length()).array();  // from https://stackoverflow.com/a/2183279
+            DatagramPacket sizePacket = new DatagramPacket(size, size.length, receipt.getAddress(), receipt.getPort());
+            socket.send(sizePacket);
+            // wait for ACK
+            socket.setSoTimeout(500);
+
+
 
 
             socket.setSoTimeout(0); // reset timeout
