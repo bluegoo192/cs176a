@@ -38,6 +38,7 @@ public class client_java_udp {
             System.out.println("Failed to send command. Terminating.");
             return;
         }
+        System.out.println("sent command");
 
         //boolean saveFileSuccess = saveFileFromServer(parseFileName(command));
     }
@@ -124,47 +125,36 @@ public class client_java_udp {
         return true;
     }
 
-    private boolean send(String message) throws IOException {
+    /**
+     * Sends a packet containing the length of the data to send, then the data, then waits for ACK
+     * Tries up to 3 times
+     * @param message the message to send
+     * @return whether sending was successful (if ACK was received)
+     * @throws IOException
+     */
+    private boolean send(String message) throws IOException { return send(message, 0); }
+    private boolean send(String message, int tries) throws IOException {
+        if (tries > 2) return false;
         byte[] receiveData = new byte[1024];  // *
         byte[] sendData = message.getBytes();  // *
         byte[] length = ByteBuffer.allocate(4).putInt(sendData.length).array();  // from https://stackoverflow.com/a/2183279
 
+        // send length then data
         DatagramPacket lengthPacket = new DatagramPacket(length, length.length, ip, port);
         DatagramPacket packet = new DatagramPacket(sendData, sendData.length, ip, port);  // *
         socket.send(lengthPacket);
         socket.send(packet);  // *
 
-        // receive a packet in return
+        // wait for ACK
         DatagramPacket receipt = new DatagramPacket(receiveData, receiveData.length);  // *
-        boolean success = receivePacket(receipt, 1);
-        if (!success) return false;
-
-        String response = new String(receipt.getData());
-        if (debug || !response.contains("ACK")) {
-            System.out.println("Received NON ACK packet from server: ");
-            System.out.println(new String(receipt.getData()));
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean receivePacket(DatagramPacket receipt, int tries) {
-        try {
-            socket.setSoTimeout(1000);  // set a 1-second timeout for our ACK
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Failed to set socket timeout?!?!");
-            return false;
-        }
-
+        socket.setSoTimeout(1000);
         try {
             socket.receive(receipt);
         } catch (Exception se) {
-            System.out.println("Failed, retrying...");
-            if (tries > 2) return false;
-            return receivePacket(receipt, tries+1);
+            System.out.println("failed, retrying...");
+            return send(message, tries+1);
         }
+
         return true;
     }
 
